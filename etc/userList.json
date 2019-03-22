@@ -1,0 +1,6 @@
+{
+  "userList": [
+    { "userId": "tec", "password": "pass", "role": "admin" },
+    { "userId": "user", "password": "pass", "role": "normal" }
+  ]
+}
