@@ -37,7 +37,7 @@ export default class ClassroomService {
       );
     } else {
       // 失敗がある場合
-      if (result[1].length != 0) {
+      if (result[1].length !== 0) {
         return new ClassroomInfoResult(
           result[0],
           result[1],

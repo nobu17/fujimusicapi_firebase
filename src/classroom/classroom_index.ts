@@ -1,7 +1,6 @@
 import * as functions from "firebase-functions";
 import HttpReqGetter from "./httpReqGetter";
 import ClassroomService from "./classroomService";
-import ClassroomInfoRequest from "./data/classroomInfoRequest";
 import { ClassroomErrorType } from "./data/classroomInfoResult";
 
 export default class ClassRoomFunction {
@@ -38,7 +37,7 @@ export default class ClassRoomFunction {
     }
     const serv = new ClassroomService();
     const result = await serv.getClassRoomInfo(
-      inputParam as ClassroomInfoRequest
+      inputParam
     );
     console.log("service result:", result);
     switch (result.errorType) {

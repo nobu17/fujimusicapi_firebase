@@ -15,9 +15,9 @@ export default class ClassroomRepository {
   public async getClassroomInfoList(
     req: ClassroomInfoRequest
   ): Promise<[Array<ClassroomInfo>, Array<string>]> {
-    let sucessClassIdList = new Array<string>();
-    let failClassIdList = new Array<string>();
-    let classRoomInfoList = new Array<ClassroomInfo>();
+    const sucessClassIdList = new Array<string>();
+    const failClassIdList = new Array<string>();
+    const classRoomInfoList = new Array<ClassroomInfo>();
 
     const bucket = admin.storage().bucket(this.buketName);
     // クラス一覧を取得
@@ -25,7 +25,7 @@ export default class ClassroomRepository {
     const allClasses = req.getClassList();
     // 順番にファイル取得
     console.log("allClasses:", allClasses);
-    for (let classId of allClasses) {
+    for (const classId of allClasses) {
       //ファイル名は クラスID/ファイル名
       console.log("classId", classId);
       const fileName = this.rootDir + classId + "/" + this.classroomFileName;
