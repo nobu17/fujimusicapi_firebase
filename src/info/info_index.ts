@@ -1,10 +1,7 @@
 import * as functions from "firebase-functions";
 import HttpReqGetter from "./httpReqGetter";
-import ClassroomService from "./classroomService";
-import ClassroomInfoRequest from "./data/classroomInfoRequest";
-import { ClassroomErrorType } from "./data/classroomInfoResult";
 
-export default class ClassRoomFunction {
+export default class InfoFunction {
   async execFunc(req: functions.https.Request, res: functions.Response) {
     switch (req.method) {
       case "GET":
@@ -29,42 +26,13 @@ export default class ClassRoomFunction {
     }
   }
   async handleGet(req: functions.https.Request, res: functions.Response) {
-    console.info("query", req.query);
     const reqGetter = new HttpReqGetter();
     const inputParam = reqGetter.getClassroomInfoRequest(req);
     if (!inputParam) {
       res.status(400).send({ error: "paramError" });
       return;
     }
-    const serv = new ClassroomService();
-    const result = await serv.getClassRoomInfo(
-      inputParam as ClassroomInfoRequest
-    );
-    console.log("service result:", result);
-    switch (result.errorType) {
-      case ClassroomErrorType.none:
-      case ClassroomErrorType.partialError:
-        res.status(200).send({
-          classroomList: result.classroomList,
-          failClassIdList: result.failClassIdList
-        });
-        break;
-      case ClassroomErrorType.paramError:
-        res.status(400).send({
-          error: "param error"
-        });
-        break;
-      case ClassroomErrorType.noClasses:
-        res.status(500).send({
-          error: "no classes"
-        });
-        break;
-      default:
-        res.status(500).send({
-          error: "not support"
-        });
-        break;
-    }
+    res.status(200).send({ error: "aaa error" });
   }
   async handlePost(req: functions.https.Request, res: functions.Response) {
     res.status(200).send({ error: "aaa error" });
