@@ -8,7 +8,7 @@ export default class ClassroomRepository {
   private readonly rootDir: string = "classrooms/";
   private buketName: string;
   constructor() {
-    this.buketName = functions.config().auth.bucket.name;
+    this.buketName = functions.config().classroom.bucket.name;
     console.log("bucketName:", this.buketName);
   }
 
@@ -33,7 +33,7 @@ export default class ClassroomRepository {
       try {
         console.log("filename:", fileName);
         const isExists = await file.exists();
-        if (!isExists) {
+        if (!isExists || !isExists[0]) {
           console.error("not eixst file :", fileName);
           failClassIdList.push(classId);
         } else {

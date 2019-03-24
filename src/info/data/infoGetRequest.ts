@@ -1,7 +1,17 @@
 export default class InfoGetRequest {
   // start : 開始日時YYYYMM end: 終了日時YYYYMM
-  constructor(public start: string, public end: string) {}
+  constructor(
+    public start: string,
+    public monthCount: number,
+    public maxInfoCount: number
+  ) {}
 
+  public getStartDate(): Date {
+    return new Date(
+      parseInt(this.start.substr(0, 4)),
+      parseInt(this.start.substr(4, 2)) - 1
+    );
+  }
   // パラメータチェック。不正の場合エラーメッセージを返す
   public validateParam(): string {
     // start check
@@ -13,15 +23,21 @@ export default class InfoGetRequest {
       return "start is error" + stRes[1];
     }
 
-    // end check
-    if (!this.end || this.end.trim() === "") {
-      return "end is empty";
+    // monthcount check
+    if (this.monthCount <= 0) {
+      return "monthCount is under zero";
     }
-    const enRes = this.checkDate(this.end);
-    if (!enRes[0]) {
-      return "start is error" + enRes[1];
+    if (this.monthCount > 6) {
+      return "max montCount is 6";
     }
 
+    // maxInfoCount check
+    if (this.maxInfoCount <= 0) {
+      return "maxInfoCount is under zero";
+    }
+    if (this.maxInfoCount > 50) {
+      return "max maxInfoCount is 50";
+    }
     return "";
   }
 

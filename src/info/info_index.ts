@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions";
 import HttpReqGetter from "./httpReqGetter";
+import InfoService from "./infoService";
 
 export default class InfoFunction {
   async execFunc(req: functions.https.Request, res: functions.Response) {
@@ -32,7 +33,9 @@ export default class InfoFunction {
       res.status(400).send({ error: "paramError" });
       return;
     }
-    res.status(200).send({ error: "aaa error" });
+    const serv = new InfoService();
+    const result = await serv.getInfoList(inputParam);
+    res.status(200).send(result);
   }
   async handlePost(req: functions.https.Request, res: functions.Response) {
     res.status(200).send({ error: "aaa error" });
