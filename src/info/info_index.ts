@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions";
 import HttpReqGetter from "./httpReqGetter";
 import InfoService from "./infoService";
+import { InfoGetResult, InfoErrorType } from "./data/infoGetResult";
 
 export default class InfoFunction {
   async execFunc(req: functions.https.Request, res: functions.Response) {
@@ -35,6 +36,29 @@ export default class InfoFunction {
     }
     const serv = new InfoService();
     const result = await serv.getInfoList(inputParam);
+    console.log("service result:", result);
+    switch (result.errorType) {
+      case InfoErrorType.none:
+        res.status(200).send({
+          infoList: result.infoList
+        });
+        break;
+      case InfoErrorType.paramError:
+        res.status(400).send({
+          error: "param error"
+        });
+        break;
+      case InfoErrorType.noData:
+        res.status(404).send({
+          error: "no data"
+        });
+        break;
+      default:
+        res.status(500).send({
+          error: "not support"
+        });
+        break;
+    }
     res.status(200).send(result);
   }
   async handlePost(req: functions.https.Request, res: functions.Response) {

@@ -13,7 +13,11 @@ export default class InfoService {
     if (message !== "") {
       return new InfoGetResult([], message, InfoErrorType.paramError);
     }
-    const rest = await this.repository.getInfoList(req);
-    return new InfoGetResult(rest, "", InfoErrorType.none);
+    const result = await this.repository.getInfoList(req);
+    if (result.length < 0) {
+      return new InfoGetResult([], "no data", InfoErrorType.noData);
+    } else {
+      return new InfoGetResult(result, "", InfoErrorType.none);
+    }
   }
 }

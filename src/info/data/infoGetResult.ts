@@ -13,5 +13,6 @@ export class Info {
 export enum InfoErrorType {
   none,
   paramError,
+  noData,
   exception
 }
