@@ -4,6 +4,7 @@ export class InfoGetResult {
 
 export class Info {
   constructor(
+    public id: string,
     public title: string,
     public postDate: string,
     public content: string

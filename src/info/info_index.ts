@@ -29,7 +29,7 @@ export default class InfoFunction {
   }
   async handleGet(req: functions.https.Request, res: functions.Response) {
     const reqGetter = new HttpReqGetter();
-    const inputParam = reqGetter.getClassroomInfoRequest(req);
+    const inputParam = reqGetter.getInfoGetRequest(req);
     if (!inputParam) {
       res.status(400).send({ error: "paramError" });
       return;
@@ -53,6 +53,11 @@ export default class InfoFunction {
           error: "no data"
         });
         break;
+      case InfoErrorType.exception:
+        res.status(500).send({
+          error: result.errorMessage
+        });
+        break;
       default:
         res.status(500).send({
           error: "not support"
@@ -62,6 +67,15 @@ export default class InfoFunction {
     res.status(200).send(result);
   }
   async handlePost(req: functions.https.Request, res: functions.Response) {
+    const reqGetter = new HttpReqGetter();
+    const inputParam = reqGetter.getInfoPostRequest(req);
+    if (!inputParam) {
+      res.status(400).send({ error: "paramError" });
+      return;
+    }
+    const serv = new InfoService();
+    const result = await serv.postInfo(inputParam);
+    console.log("result", result);
     res.status(200).send({ error: "aaa error" });
   }
 }
