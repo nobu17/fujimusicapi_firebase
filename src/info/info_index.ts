@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions";
 import HttpReqGetter from "./httpReqGetter";
 import InfoService from "./infoService";
-import { InfoGetResult, InfoErrorType } from "./data/infoGetResult";
+import { InfoErrorType } from "./data/infoGetResult";
 
 export default class InfoFunction {
   async execFunc(req: functions.https.Request, res: functions.Response) {

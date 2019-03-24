@@ -14,7 +14,7 @@ export default class InfoService {
       return new InfoGetResult([], message, InfoErrorType.paramError);
     }
     const result = await this.repository.getInfoList(req);
-    if (result.length < 0) {
+    if (result.length <= 0) {
       return new InfoGetResult([], "no data", InfoErrorType.noData);
     } else {
       return new InfoGetResult(result, "", InfoErrorType.none);
