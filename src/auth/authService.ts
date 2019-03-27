@@ -34,17 +34,33 @@ export default class AuthService {
       }) as any;
     } catch (err) {
       console.error("token decode error", err);
-      return new AuthResult(
-        "",
-        "",
-        "",
-        "token decode error",
-        AuthErrorType.tokenError
-      );
+      // トークン切れの場合
+      if (err.name === "TokenExpiredError") {
+        return new AuthResult(
+          "",
+          "",
+          "",
+          "token is expired",
+          AuthErrorType.tokenExpired
+        );
+      } else {
+        return new AuthResult(
+          "",
+          "",
+          "",
+          "token decode error",
+          AuthErrorType.tokenError
+        );
+      }
     }
     //トークン内のIdのと一致指定に場合はエラー
     if (decodeUser.userId !== req.getUserId()) {
-      console.error("no match user between token and req:"+ decodeUser.userId + "," + req.getUserId());
+      console.error(
+        "no match user between token and req:" +
+          decodeUser.userId +
+          "," +
+          req.getUserId()
+      );
       return new AuthResult(
         "",
         "",

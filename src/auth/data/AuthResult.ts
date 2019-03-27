@@ -12,6 +12,7 @@ export enum AuthErrorType {
   none,
   paramError,
   tokenError,
+  tokenExpired,
   noUser,
   authError,
   exception

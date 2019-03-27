@@ -58,6 +58,9 @@ export default class AuthFunction {
       ) {
         console.error(result.errorMessage);
         res.status(404).send({ error: "auth is failed" });
+      } else if (result.errorType === AuthErrorType.tokenExpired) {
+        console.error("token is expired");
+        res.status(401).send({ error: "token is expired" });
       } else {
         console.error(result.errorMessage);
         res.status(503).send({ error: "surver error" });
