@@ -12,7 +12,7 @@ export default class AuthFunction {
         try {
           await this.handlePost(req, res);
         } catch (err) {
-          console.error("hanble post error", err);
+          console.error("handle post error", err);
           res.status(503).send({ error: "unexpected error" });
         }
         break;

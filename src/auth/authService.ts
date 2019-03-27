@@ -7,9 +7,12 @@ import * as jwt from "jsonwebtoken";
 export default class AuthService {
   private repository: AuthDataRepository;
   private secretKey: string;
+  private tokenExpHour: string;
   constructor() {
     this.repository = new AuthDataRepository();
     this.secretKey = functions.config().auth.seckey;
+    this.tokenExpHour = "24h";
+    //console.log("seckey", this.secretKey);
   }
 
   async getAuthResult(req: LoginRequest): Promise<AuthResult> {
@@ -29,7 +32,11 @@ export default class AuthService {
         //パスワードの検証
         if (targetUser.password === req.getPassword()) {
           // jwtでトークン発行
-          const token = jwt.sign({ userId: targetUser.userId }, this.secretKey, { algorithm: 'RS256'});
+          const token = jwt.sign(
+            { userId: targetUser.userId },
+            this.secretKey,
+            { algorithm: "HS256", expiresIn: this.tokenExpHour }
+          );
           return new AuthResult(
             targetUser.userId,
             targetUser.role,
