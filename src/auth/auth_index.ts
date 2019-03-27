@@ -38,7 +38,13 @@ export default class AuthFunction {
       const result = await serv.getAuthResult(param as LoginRequest);
       console.log("result", result);
       if (result.errorType === AuthErrorType.none) {
-        res.status(200).send({ userId: result.userId, role: result.role });
+        res
+          .status(200)
+          .send({
+            userId: result.userId,
+            role: result.role,
+            token: result.token
+          });
       } else if (
         result.errorType === AuthErrorType.authError ||
         result.errorType === AuthErrorType.noUser

@@ -1,11 +1,15 @@
+import * as functions from "firebase-functions";
 import LoginRequest from "./data/LoginRequest";
 import { AuthResult, AuthErrorType } from "./data/AuthResult";
 import { AuthDataRepository } from "./authDataRepository";
+import * as jwt from "jsonwebtoken";
 
 export default class AuthService {
   private repository: AuthDataRepository;
+  private secretKey: string;
   constructor() {
     this.repository = new AuthDataRepository();
+    this.secretKey = functions.config().auth.seckey;
   }
 
   async getAuthResult(req: LoginRequest): Promise<AuthResult> {
@@ -14,7 +18,7 @@ export default class AuthService {
     if (message !== "") {
       //入力エラー
       console.error("input validation error", message);
-      return new AuthResult("", "", message, AuthErrorType.paramError);
+      return new AuthResult("", "", "", message, AuthErrorType.paramError);
     }
     const users = await this.repository.getUserList();
     console.log("users", users);
@@ -24,14 +28,18 @@ export default class AuthService {
       if (targetUser) {
         //パスワードの検証
         if (targetUser.password === req.getPassword()) {
+          // jwtでトークン発行
+          const token = jwt.sign({ userId: targetUser.userId }, this.secretKey, { algorithm: 'RS256'});
           return new AuthResult(
             targetUser.userId,
             targetUser.role,
+            token,
             "",
             AuthErrorType.none
           );
         } else {
           return new AuthResult(
+            "",
             "",
             "",
             "password is not match",
@@ -42,13 +50,20 @@ export default class AuthService {
         return new AuthResult(
           "",
           "",
+          "",
           "no match user:" + req.getUserId(),
           AuthErrorType.noUser
         );
       }
       //return new AuthResult("", "", message, AuthErrorType.none);
     } else {
-      return new AuthResult("", "", "storage error", AuthErrorType.exception);
+      return new AuthResult(
+        "",
+        "",
+        "",
+        "storage error",
+        AuthErrorType.exception
+      );
     }
   }
 }
