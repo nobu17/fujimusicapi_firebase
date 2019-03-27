@@ -11,6 +11,7 @@ export class AuthResult {
 export enum AuthErrorType {
   none,
   paramError,
+  tokenError,
   noUser,
   authError,
   exception

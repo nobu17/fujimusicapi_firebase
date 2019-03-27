@@ -3,7 +3,8 @@ import HttpReqGetter from "./httpReqGetter";
 import AuthService from "./authService";
 //import LoginRequests from "./data/LoginRequestData";
 import LoginRequest from "./data/LoginRequest";
-import { AuthErrorType } from "./data/AuthResult";
+import { AuthErrorType, AuthResult } from "./data/AuthResult";
+import LoginTokenRequest from "./data/loginTokenRequest";
 
 export default class AuthFunction {
   async execFunc(req: functions.https.Request, res: functions.Response) {
@@ -33,21 +34,27 @@ export default class AuthFunction {
     // リクエストデータの種類に応じて変更
     console.log("param", param);
     //console.log("param.constructor.name", param.constructor.name);
-    if (param.constructor.name === "LoginRequest") {
+    const name = param.constructor.name;
+    if (this.isAllowedParam(name)) {
       const serv = new AuthService();
-      const result = await serv.getAuthResult(param as LoginRequest);
+      let result: AuthResult;
+      // リクエストパラメータに応じて処理を変更
+      if (this.isLoginRequest(name)) {
+        result = await serv.getAuthResult(param as LoginRequest);
+      } else {
+        result = await serv.getAuthResultByToken(param as LoginTokenRequest);
+      }
       console.log("result", result);
       if (result.errorType === AuthErrorType.none) {
-        res
-          .status(200)
-          .send({
-            userId: result.userId,
-            role: result.role,
-            token: result.token
-          });
+        res.status(200).send({
+          userId: result.userId,
+          role: result.role,
+          token: result.token
+        });
       } else if (
         result.errorType === AuthErrorType.authError ||
-        result.errorType === AuthErrorType.noUser
+        result.errorType === AuthErrorType.noUser ||
+        result.errorType === AuthErrorType.tokenError
       ) {
         console.error(result.errorMessage);
         res.status(404).send({ error: "auth is failed" });
@@ -59,5 +66,18 @@ export default class AuthFunction {
       res.status(400).send({ error: "not support type or paramError" });
       return;
     }
+  }
+
+  private isAllowedParam(param: string): boolean {
+    if (param === "LoginRequest" || param === "LoginTokenRequest") {
+      return true;
+    }
+    return false;
+  }
+  private isLoginRequest(param: string): boolean {
+    if (param === "LoginRequest") {
+      return true;
+    }
+    return false;
   }
 }

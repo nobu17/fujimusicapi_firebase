@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions";
 import LoginRequest from "./data/LoginRequest";
+import LoginTokenRequest from "./data/loginTokenRequest";
 import IAuthReqData from "./data/IAuthReqData";
 
 export default class HttpReqGetter {
@@ -30,6 +31,14 @@ export default class HttpReqGetter {
     ) {
       return new LoginRequest(body.userId, body.password);
     }
+    if (
+      typeof body === "object" &&
+      body.method === "authByToken" &&
+      typeof body.userId === "string" &&
+      typeof body.token === "string"
+    ) {
+      return new LoginTokenRequest(body.userId, body.token);
+    }    
     console.error("no match body");
     return null;
   }
