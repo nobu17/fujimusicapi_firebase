@@ -23,43 +23,75 @@ export default class InfoRepository {
       return await this.getInfoListByCount(req);
     }
   }
-
+  // 記事の投稿及び編集、削除
   public async postInfo(req: InfoPostRequest): Promise<string> {
     if (req.isMakeMode()) {
       return await this.makeNewInfo(req);
+    } else if (req.isEditMode()) {
+      //編集の場合は削除してから新規作成
+      const delRes = await this.deleteInfo(req);
+      if (delRes === "") {
+        //idは新しい日付に基づいて再度付与される
+        return await this.makeNewInfo(req);
+      } else {
+        return delRes;
+      }
+    } else if (req.isDeleteMode()) {
+      return await this.deleteInfo(req);
     }
-    return "";
+    console.error("mode error", req);
+    return "mode error";
   }
 
   // #region postInfo
 
+  // #region makepost
+
   // 新規投稿
   private async makeNewInfo(req: InfoPostRequest): Promise<string> {
-    let infoList = new Array<Info>();
-    const bucket = admin.storage().bucket(this.buketName);
     //ファイル名取得
     const fileName = this.getFileNameByPostDate(req.postInfo.postDate);
-    const isFileExists = await bucket.file(fileName).exists();
-    // ファイルがある場合のみ読み込む
-    if (isFileExists && isFileExists[0]) {
-      console.log("file Exists. start reading:", fileName);
-      const data = await bucket.file(fileName).download();
-      let ninfoList = this.getInfoListByJson(data.toString()) as Array<Info>;
-      if (ninfoList) {
-        infoList = ninfoList;
-      }
+    // ファイル読み込み
+    let infoList = await this.readInfoList(fileName);
+    if (infoList === null) {
+      return "read file is fail:" + fileName;
     }
-    let addData = req.postInfo;
+    const editData = infoList;
+    const addData = req.postInfo;
     // 更新日からIDを付与
     addData.id = this.getIdByPostDate(addData.postDate);
-    infoList.push(addData);
+    editData.push(addData);
     // JSON文字列を保存
-    if (this.uploadFile(JSON.stringify(infoList), fileName)) {
+    if (this.uploadFile(JSON.stringify(editData), fileName)) {
       console.log("upload is successeded", fileName);
       return "";
     } else {
       return "upload file is fail:" + fileName;
     }
+  }
+  // バケットからデータを読み込む
+  private async readInfoList(fileName: string): Promise<Array<Info> | null> {
+    let infoList = new Array<Info>();
+    const bucket = admin.storage().bucket(this.buketName);
+
+    const isFileExists = await bucket.file(fileName).exists();
+    // ファイルがある場合のみ読み込む
+    if (isFileExists && isFileExists[0]) {
+      console.log("file Exists. start reading:", fileName);
+      try {
+        const data = await bucket.file(fileName).download();
+        const ninfoList = this.getInfoListByJson(data.toString()) as Array<
+          Info
+        >;
+        if (ninfoList) {
+          infoList = ninfoList;
+        }
+      } catch (err) {
+        console.error("file download error:", err);
+        return null;
+      }
+    }
+    return infoList;
   }
 
   private async uploadFile(
@@ -88,7 +120,49 @@ export default class InfoRepository {
     const yearAndMonth = postDate.substr(0, 7);
     return yearAndMonth + uuid.v4();
   }
+  // #endregion
 
+  // #region deleteInfo
+
+  private async deleteInfo(req: InfoPostRequest): Promise<string> {
+    //ファイル名取得(idからファイル名を探す)
+    const fileName = this.getFileNameFromId(req.postInfo.id);
+    console.log("read a file", fileName);
+    const infoList = await this.readInfoList(fileName);
+    if (infoList === null) {
+      console.error("delete info error while reading a file", req);
+      return "delete info error while reading a file:" + fileName;
+    }
+    console.log("read result", infoList);
+    // 削除
+    let isDeleted = false;
+    for (let i = 0; i < infoList.length; i++) {
+      if (infoList[i].id === req.postInfo.id) {
+        console.log("delete a info", infoList[i]);
+        infoList.splice(i, 1);
+        isDeleted = true;
+        break;
+      }
+    }
+    if (!isDeleted) {
+      console.warn("no deleted a info:", req);
+      return "no deleted a info";
+    } else {
+      //保存
+      if (!(await this.uploadFile(JSON.stringify(infoList), fileName))) {
+        return "save a file error";
+      }
+      console.log("save is successed", fileName);
+    }
+    return "";
+  }
+
+  private getFileNameFromId(id: string): string {
+    //idの先頭のyyyy-mmを取り出す
+    const yyyymm = id.substr(0, 7);
+    return this.rootDir + yyyymm + ".json";
+  }
+  // #endregion
   // #endregion
 
   // #region getInfo

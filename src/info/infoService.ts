@@ -16,7 +16,8 @@ export default class InfoService {
       return new InfoPostResult(message, InfoPostErrorType.paramError);
     }
     const result = await this.repository.postInfo(req);
-    if (result && result !== "") {
+    console.log("repository result:", result);
+    if (result === "") {
       return new InfoPostResult("", InfoPostErrorType.none);
     } else {
       return new InfoPostResult(result, InfoPostErrorType.exception);
