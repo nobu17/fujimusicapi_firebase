@@ -108,6 +108,17 @@ export default class InfoRepository {
     }
   }
 
+  private async deleteFile(fileName: string) {
+    const bucket = admin.storage().bucket(this.buketName);
+    try {
+      await bucket.file(fileName).delete();
+      return true;
+    } catch (err) {
+      console.error("upload is fail", err);
+      return false;
+    }
+  }
+
   //日付からファイル名を取得
   private getFileNameByPostDate(postDate: string) {
     const yearAndMonth = postDate.substr(0, 7);
@@ -148,8 +159,13 @@ export default class InfoRepository {
       console.warn("no deleted a info:", req);
       return "no deleted a info";
     } else {
-      //保存
-      if (!(await this.uploadFile(JSON.stringify(infoList), fileName))) {
+      //データ件数が0ならば削除異なるならば上書き
+      if (infoList.length === 0) {
+        console.log("info list is 0. delete a file");
+        if (!(await this.deleteFile(fileName))) {
+          return "delete a file error";
+        }
+      } else if (!(await this.uploadFile(JSON.stringify(infoList), fileName))) {
         return "save a file error";
       }
       console.log("save is successed", fileName);
