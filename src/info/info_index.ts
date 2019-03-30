@@ -115,9 +115,16 @@ export default class InfoFunction {
     console.log("service result:", result);
     switch (result.errorType) {
       case InfoPostErrorType.none:
-        res.status(200).send({
-          message: "post is success"
-        });
+        if (result.storedInfo) {
+          res.status(200).send({
+            storedInfo: result.storedInfo,
+            message: "post is success"
+          });
+        } else {
+          res.status(200).send({
+            message: "post is success"
+          });
+        }
         break;
       case InfoPostErrorType.paramError:
         res.status(400).send({

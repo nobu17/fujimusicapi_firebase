@@ -15,14 +15,18 @@ export default class InfoService {
     // 入力チェック
     const message = req.validateParam();
     if (message !== "") {
-      return new InfoPostResult(message, InfoPostErrorType.paramError);
+      return new InfoPostResult(null, message, InfoPostErrorType.paramError);
     }
     const result = await this.repository.postInfo(req);
     console.log("repository result:", result);
-    if (result === "") {
-      return new InfoPostResult("", InfoPostErrorType.none);
+    if (result[1] === "") {
+      return new InfoPostResult(result[0], "", InfoPostErrorType.none);
     } else {
-      return new InfoPostResult(result, InfoPostErrorType.exception);
+      return new InfoPostResult(
+        result[0],
+        result[1],
+        InfoPostErrorType.exception
+      );
     }
   }
 
@@ -36,14 +40,14 @@ export default class InfoService {
     }
     // 現状は引数無し
     const result = await this.repository.getDateList();
-     if (result[1] !== "") {
+    if (result[1] !== "") {
       return new InfoGetDateResult([], result[1], InfoErrorType.exception);
     }
     if (result[0].length <= 0) {
       return new InfoGetDateResult([], "no data", InfoErrorType.noData);
     } else {
       return new InfoGetDateResult(result[0], "", InfoErrorType.none);
-    }   
+    }
   }
 
   // 記事情報を取得します

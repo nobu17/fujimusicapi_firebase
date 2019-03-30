@@ -24,7 +24,7 @@ export default class InfoRepository {
     }
   }
   // 記事の投稿及び編集、削除
-  public async postInfo(req: InfoPostRequest): Promise<string> {
+  public async postInfo(req: InfoPostRequest): Promise<[Info | null, string]> {
     if (req.isMakeMode()) {
       return await this.makeNewInfo(req);
     } else if (req.isEditMode()) {
@@ -34,13 +34,14 @@ export default class InfoRepository {
         //idは新しい日付に基づいて再度付与される
         return await this.makeNewInfo(req);
       } else {
-        return delRes;
+        return [null, delRes];
       }
     } else if (req.isDeleteMode()) {
-      return await this.deleteInfo(req);
+      const msg =  await this.deleteInfo(req);
+      return [null, msg];
     }
     console.error("mode error", req);
-    return "mode error";
+    return [null, "mode error"];
   }
 
   // #region postInfo
@@ -48,13 +49,13 @@ export default class InfoRepository {
   // #region makepost
 
   // 新規投稿
-  private async makeNewInfo(req: InfoPostRequest): Promise<string> {
+  private async makeNewInfo(req: InfoPostRequest): Promise<[Info | null, string]> {
     //ファイル名取得
     const fileName = this.getFileNameByPostDate(req.postInfo.postDate);
     // ファイル読み込み
     let infoList = await this.readInfoList(fileName);
     if (infoList === null) {
-      return "read file is fail:" + fileName;
+      return [null, "read file is fail:" + fileName];
     }
     const editData = infoList;
     const addData = req.postInfo;
@@ -64,9 +65,9 @@ export default class InfoRepository {
     // JSON文字列を保存
     if (this.uploadFile(JSON.stringify(editData), fileName)) {
       console.log("upload is successeded", fileName);
-      return "";
+      return [addData, ""];
     } else {
-      return "upload file is fail:" + fileName;
+      return [null, "upload file is fail:" + fileName];
     }
   }
   // バケットからデータを読み込む
@@ -281,7 +282,7 @@ export default class InfoRepository {
         if (isFileExists && isFileExists[0]) {
           const data = await bucket.file(fileName).download();
           const infoLis = this.getInfoListByJson(data.toString());
-          if (infoLis && infoLis.length > 1) {
+          if (infoLis && infoLis.length > 0) {
             list = list.concat(infoLis);
           }
           console.log("read file end:", fileName);
