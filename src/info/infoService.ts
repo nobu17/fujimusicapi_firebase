@@ -3,6 +3,8 @@ import { InfoPostRequest } from "./data/infoPostRequest";
 import { InfoGetResult, InfoErrorType } from "./data/infoGetResult";
 import { InfoPostResult, InfoPostErrorType } from "./data/infoPostResult";
 import InfoRepository from "./infoRepository";
+import InfoGetDateRequest from "./data/infoGetDateRequest";
+import InfoGetDateResult from "./data/infoGetDateResult";
 
 export default class InfoService {
   private repository: InfoRepository;
@@ -22,6 +24,26 @@ export default class InfoService {
     } else {
       return new InfoPostResult(result, InfoPostErrorType.exception);
     }
+  }
+
+  public async getDateList(
+    req: InfoGetDateRequest
+  ): Promise<InfoGetDateResult> {
+    // 入力チェック
+    const message = req.validateParam();
+    if (message !== "") {
+      return new InfoGetDateResult([], message, InfoErrorType.paramError);
+    }
+    // 現状は引数無し
+    const result = await this.repository.getDateList();
+     if (result[1] !== "") {
+      return new InfoGetDateResult([], result[1], InfoErrorType.exception);
+    }
+    if (result[0].length <= 0) {
+      return new InfoGetDateResult([], "no data", InfoErrorType.noData);
+    } else {
+      return new InfoGetDateResult(result[0], "", InfoErrorType.none);
+    }   
   }
 
   // 記事情報を取得します

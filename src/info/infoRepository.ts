@@ -182,6 +182,38 @@ export default class InfoRepository {
   // #endregion
 
   // #region getInfo
+  // 日付リストの取得
+  public async getDateList(): Promise<[Array<string>, string]> {
+    let list = new Array<string>();
+    const bucket = admin.storage().bucket(this.buketName);
+    const options = { prefix: this.rootDir };
+    try {
+      // ファイル一覧を取得
+      let [fileList] = await bucket.getFiles(options);
+      if (fileList && fileList.length > 0) {
+        //拡張子を除く
+        list = fileList
+          .filter(x => x.name.endsWith(".json"))
+          .map(f => f.name.replace(this.rootDir, "").replace(".json", ""));
+        //降順に並び替え
+        list = list.sort((n1, n2) => {
+          if (n1 > n2) {
+            return -1;
+          }
+          if (n1 < n2) {
+            return 1;
+          }
+          return 0;
+        });
+      }
+    } catch (err) {
+      console.error("file list get error", err);
+      [null, "file list get error"];
+    }
+
+    return [list, ""];
+  }
+
   // カウント数による記事の取得
   private async getInfoListByCount(
     req: InfoGetRequest
@@ -196,10 +228,10 @@ export default class InfoRepository {
         //ファイル名を降順
         console.log("fileList", fileList);
         fileList = fileList.sort((n1, n2) => {
-          if (n1 > n2) {
+          if (n1.name > n2.name) {
             return -1;
           }
-          if (n1 < n2) {
+          if (n1.name < n2.name) {
             return 1;
           }
           return 0;

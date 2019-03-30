@@ -1,17 +1,33 @@
 import * as functions from "firebase-functions";
 import InfoGetRequest from "./data/infoGetRequest";
 import { InfoPostRequest } from "./data/infoPostRequest";
+import IGetRequest from "./data/iGetRequest";
+import InfoGetDateRequest from "./data/infoGetDateRequest";
 
 export default class HttpReqGetter {
+  public getRequest(req: functions.https.Request): IGetRequest | null {
+    if (!req.query || !req.query.mode || typeof req.query.mode !== "string") {
+      return null;
+    }
+    // 日付取得モード
+    if (req.query.mode === "dateList") {
+      return this.getDateGetRequest(req);
+    } else {
+      return this.getInfoGetRequest(req);
+    }
+  }
+
+  public getDateGetRequest(
+    req: functions.https.Request
+  ): InfoGetDateRequest | null {
+    return new InfoGetDateRequest(req.query.mode, req.query.listType);
+  }
+
   public getInfoGetRequest(
     req: functions.https.Request
   ): InfoGetRequest | null {
     let res: InfoGetRequest | null;
 
-    if (!req.query || !req.query.mode || typeof req.query.mode !== "string") {
-      res = null;
-      return res;
-    }
     // maxCountはオプション扱い(デフォルト10)
     let maxInfoCount = 10;
     if (req.query.maxInfoCount && !isNaN(parseInt(req.query.maxInfoCount))) {
@@ -41,7 +57,7 @@ export default class HttpReqGetter {
   public getInfoPostRequest(
     req: functions.https.Request
   ): InfoPostRequest | null {
-      let res :InfoPostRequest | null;
+    let res: InfoPostRequest | null;
     switch (req.get("content-type")) {
       case "application/json":
         //既にJSONからオブジェクトにパース済みなのでそのまま取ればよい

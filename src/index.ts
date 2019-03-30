@@ -31,32 +31,39 @@ export const authFunction = functions.https.onRequest(
 // お知らせ
 export const infoFunction = functions.https.onRequest(
   async (request, response) => {
-    // check auth
-    if (Common.IsAuthrizedRequest(request, functions.config().info.apikey)) {
-      const func = new InfoFunction();
-      await func.execFunc(request, response);
-    } else {
-      console.error("auth error. api key is ", functions.config().info.apikey);
-      response.status(400).send({ error: "not authorized" });
-    }
+    return cors(request, response, async () => {
+      // check auth
+      if (Common.IsAuthrizedRequest(request, functions.config().info.apikey)) {
+        const func = new InfoFunction();
+        await func.execFunc(request, response);
+      } else {
+        console.error(
+          "auth error. api key is ",
+          functions.config().info.apikey
+        );
+        response.status(400).send({ error: "not authorized" });
+      }
+    });
   }
 );
 
 // 教室情報関数
 export const classroomFunction = functions.https.onRequest(
   async (request, response) => {
-    // check auth
-    if (
-      Common.IsAuthrizedRequest(request, functions.config().classroom.apikey)
-    ) {
-      const func = new ClassRoomFunction();
-      await func.execFunc(request, response);
-    } else {
-      console.error(
-        "auth error. api key is ",
-        functions.config().classroom.apikey
-      );
-      response.status(400).send({ error: "not authorized" });
-    }
+    return cors(request, response, async () => {
+      // check auth
+      if (
+        Common.IsAuthrizedRequest(request, functions.config().classroom.apikey)
+      ) {
+        const func = new ClassRoomFunction();
+        await func.execFunc(request, response);
+      } else {
+        console.error(
+          "auth error. api key is ",
+          functions.config().classroom.apikey
+        );
+        response.status(400).send({ error: "not authorized" });
+      }
+    });
   }
 );

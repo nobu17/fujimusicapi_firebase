@@ -1,4 +1,5 @@
-export default class InfoGetRequest {
+import IGetRequest from "./iGetRequest";
+export default class InfoGetRequest implements IGetRequest {
   // start : 開始日時YYYYMM end: 終了日時YYYYMM
   constructor(
     public mode: string, //入力タイプ(count,date)
@@ -16,8 +17,9 @@ export default class InfoGetRequest {
   // パラメータチェック。不正の場合エラーメッセージを返す
   public validateParam(): string {
     if (this.mode !== "count" && this.mode !== "date") {
-      return "mode error(only count or date)";
+      return "mode error(only count or date or dateList)";
     }
+
     // 日付モードの場合
     if (this.mode === "date") {
       // start check
