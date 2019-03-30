@@ -6,6 +6,7 @@ import ClassroomInfoRequest from "./data/classroomInfoRequest";
 export default class ClassroomRepository {
   private readonly classroomFileName: string = "classInfo.json";
   private readonly rootDir: string = "classrooms/";
+  private readonly classroomImageDirName: string = "images/";
   private buketName: string;
   constructor() {
     this.buketName = functions.config().classroom.bucket.name;
@@ -41,8 +42,15 @@ export default class ClassroomRepository {
           console.log("download", data.toString());
           const room = this.getClassroomInfo(classId, data.toString());
           if (room) {
-            sucessClassIdList.push(classId);
-            classRoomInfoList.push(room);
+            // 画像を取得
+            const imageList = await this.getImageList(classId);
+            if (imageList === null) {
+              failClassIdList.push(classId);
+            } else {
+              room.imageList = imageList;
+              sucessClassIdList.push(classId);
+              classRoomInfoList.push(room);
+            }
           } else {
             console.error("room error:");
             failClassIdList.push(classId);
@@ -56,6 +64,34 @@ export default class ClassroomRepository {
     return [classRoomInfoList, failClassIdList];
   }
 
+  private async getImageList(classId: string): Promise<Array<string> | null> {
+    const imageList = new Array<string>();
+    const bucket = admin.storage().bucket(this.buketName);
+    const dirNames = this.rootDir + classId + "/" + this.classroomImageDirName;
+    const options = { prefix: dirNames };
+    
+    try {
+      // ファイル一覧を取得
+      let [fileList] = await bucket.getFiles(options);
+      if (fileList && fileList.length > 0) {
+        for (const f of fileList) {
+          // 署名付きURLを取得
+          const [url] = await f.getSignedUrl({
+            action: "read",
+            expires: "03-09-2491"
+          });
+          console.log("url", url);
+          imageList.push(url);
+        }
+      }
+      return imageList;
+    } catch (err) {
+      console.error("url get error", err);
+      return null;
+    }
+  }
+
+  // JSONデータからクラス情報を取得します
   private getClassroomInfo(
     classId: string,
     jsonData: string

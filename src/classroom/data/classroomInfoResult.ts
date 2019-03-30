@@ -9,7 +9,7 @@ export class ClassroomInfoResult {
 }
 
 export class ClassroomInfo {
-  // classNames : カンマ区切り
+  public imageList: Array<string> = new Array<string>();
   constructor(
     public classId: string,
     public description: string,
