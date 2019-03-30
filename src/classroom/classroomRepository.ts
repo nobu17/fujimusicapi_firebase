@@ -67,17 +67,17 @@ export default class ClassroomRepository {
       let lessonPlace = "";
 
       if (obj) {
-        if (!obj.description && typeof obj.description === "string") {
+        if (obj.description && typeof obj.description === "string") {
           desc = obj.description;
         } else {
           console.warn("description is not defined:");
         }
-        if (!obj.lessonTimes && typeof obj.lessonTimes === "string") {
+        if (obj.lessonTimes && typeof obj.lessonTimes === "string") {
           lessonTimes = obj.lessonTimes;
         } else {
           console.warn("lessonTimes is not defined:");
         }
-        if (!obj.lessonPlace && typeof obj.lessonPlace === "string") {
+        if (obj.lessonPlace && typeof obj.lessonPlace === "string") {
           lessonPlace = obj.lessonPlace;
         } else {
           console.warn("lessonPlace is not defined:");
