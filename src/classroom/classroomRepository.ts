@@ -2,6 +2,7 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { ClassroomInfo } from "./data/classroomInfoResult";
 import ClassroomInfoRequest from "./data/classroomInfoRequest";
+import { ClassroomInfoPostRequest } from "./data/classroomPostRequest";
 
 export default class ClassroomRepository {
   private readonly classroomFileName: string = "classInfo.json";
@@ -69,7 +70,7 @@ export default class ClassroomRepository {
     const bucket = admin.storage().bucket(this.buketName);
     const dirNames = this.rootDir + classId + "/" + this.classroomImageDirName;
     const options = { prefix: dirNames };
-    
+
     try {
       // ファイル一覧を取得
       let [fileList] = await bucket.getFiles(options);
@@ -126,6 +127,40 @@ export default class ClassroomRepository {
     } catch (err) {
       console.error("getClassroomInfo error:", err);
       return null;
+    }
+  }
+  // Array<string> : 成功したクラスID
+  // [string, string]  : 失敗したID, message
+  public async postClassInfo(
+    req: ClassroomInfoPostRequest
+  ): Promise<[Array<string>, Map<string, string>] | null> {
+    const successList = new Array<string>();
+    const failList = new Map<string, string>();
+    // クラス別に保存
+    for (const cla of req.classList) {
+      const str = JSON.stringify(cla);
+      const fileName =
+        this.rootDir + cla.classId + "/" + this.classroomFileName;
+      if (!(await this.uploadFile(str, fileName))) {
+        failList.set(cla.classId, "file upload is fail");
+      } else {
+        successList.push(cla.classId);
+      }
+    }
+    return [successList, failList];
+  }
+
+  private async uploadFile(
+    jsonString: string,
+    fileName: string
+  ): Promise<boolean> {
+    const bucket = admin.storage().bucket(this.buketName);
+    try {
+      await bucket.file(fileName).save(jsonString);
+      return true;
+    } catch (err) {
+      console.error("upload is fail", err);
+      return false;
     }
   }
 }

@@ -2,6 +2,10 @@ import * as functions from "firebase-functions";
 import HttpReqGetter from "./httpReqGetter";
 import ClassroomService from "./classroomService";
 import { ClassroomErrorType } from "./data/classroomInfoResult";
+import { ClassroomInfoPostRequest } from "./data/classroomPostRequest";
+import {
+  ClassroomPostErrorType
+} from "./data/classroomPostResult";
 
 export default class ClassRoomFunction {
   async execFunc(req: functions.https.Request, res: functions.Response) {
@@ -10,7 +14,7 @@ export default class ClassRoomFunction {
         try {
           await this.handleGet(req, res);
         } catch (err) {
-          console.error("hanble get error", err);
+          console.error("handle get error", err);
           res.status(503).send({ error: "unexpected error" });
         }
         break;
@@ -18,7 +22,7 @@ export default class ClassRoomFunction {
         try {
           await this.handlePost(req, res);
         } catch (err) {
-          console.error("hanble post error", err);
+          console.error("handle post error", err);
           res.status(503).send({ error: "unexpected error" });
         }
         break;
@@ -36,9 +40,7 @@ export default class ClassRoomFunction {
       return;
     }
     const serv = new ClassroomService();
-    const result = await serv.getClassRoomInfo(
-      inputParam
-    );
+    const result = await serv.getClassRoomInfo(inputParam);
     console.log("service result:", result);
     switch (result.errorType) {
       case ClassroomErrorType.none:
@@ -66,6 +68,46 @@ export default class ClassRoomFunction {
     }
   }
   async handlePost(req: functions.https.Request, res: functions.Response) {
-    res.status(200).send({ error: "aaa error" });
+    const reqGetter = new HttpReqGetter();
+    const inputParam = reqGetter.getClassroomPostRequest(req);
+    if (!inputParam) {
+      res.status(400).send({ error: "paramError" });
+      return;
+    }
+    if (inputParam.getMethodType() === "classInfo") {
+      const serv = new ClassroomService();
+      const result = await serv.postClassInfo(
+        inputParam as ClassroomInfoPostRequest
+      );
+      console.log("service result:", result);
+      switch (result.errorType) {
+        case ClassroomPostErrorType.none:
+        case ClassroomPostErrorType.partialError:
+          res.status(200).send({
+            successClassIdList: result.successClassIdList,
+            failClassIdList: result.failClassIdList
+          });
+          break;
+        case ClassroomPostErrorType.paramError:
+          res.status(400).send({
+            error: "param error"
+          });
+          break;
+        case ClassroomPostErrorType.exception:
+          res.status(400).send({
+            error: result.errorMessage
+          });
+          break;
+        default:
+          res.status(500).send({
+            error: "not support"
+          });
+          break;
+      }
+    } 
+    //else if (inputParam.getMethodType() === "classImage") {}
+    else {
+      res.status(400).send({ error: "unexpected error" });
+    }
   }
 }

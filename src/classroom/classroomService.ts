@@ -4,13 +4,18 @@ import {
   ClassroomErrorType
 } from "./data/classroomInfoResult";
 import ClassroomRepository from "./classroomRepository";
+import { ClassroomInfoPostRequest } from "./data/classroomPostRequest";
+import {
+  ClassroomPostResult,
+  ClassroomPostErrorType
+} from "./data/classroomPostResult";
 
 export default class ClassroomService {
   private repository: ClassroomRepository;
   constructor() {
     this.repository = new ClassroomRepository();
   }
-  async getClassRoomInfo(
+  public async getClassRoomInfo(
     req: ClassroomInfoRequest
   ): Promise<ClassroomInfoResult> {
     // 入力チェック
@@ -52,6 +57,61 @@ export default class ClassroomService {
           ClassroomErrorType.none
         );
       }
+    }
+  }
+
+  public async postClassInfo(
+    req: ClassroomInfoPostRequest
+  ): Promise<ClassroomPostResult> {
+    // 入力チェック
+    const message = req.validateParam();
+    if (message !== "") {
+      //入力エラー
+      console.error("input validation error", message);
+      return new ClassroomPostResult(
+        [],
+        [],
+        message,
+        ClassroomPostErrorType.paramError
+      );
+    }
+    const result = await this.repository.postClassInfo(req);
+    if (!result) {
+      return new ClassroomPostResult(
+        [],
+        [],
+        "result is null",
+        ClassroomPostErrorType.exception
+      );
+    }
+    //失敗IDを格納
+    const failList = new Array<string>();
+    let errorMsg = "";
+    result[1].forEach((v, k) => {
+      failList.push(k);
+      errorMsg += "classId:" + k + "," + v;
+    });
+    if (result[0].length > 0 && failList.length > 0) {
+      return new ClassroomPostResult(
+        result[0],
+        failList,
+        errorMsg,
+        ClassroomPostErrorType.partialError
+      );
+    } else if(result[0].length > 0) {
+      return new ClassroomPostResult(
+        result[0],
+        failList,
+        errorMsg,
+        ClassroomPostErrorType.none
+      );
+    } else {
+       return new ClassroomPostResult(
+        result[0],
+        failList,
+        errorMsg,
+        ClassroomPostErrorType.exception
+      );       
     }
   }
 }
