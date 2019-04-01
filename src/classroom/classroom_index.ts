@@ -2,10 +2,11 @@ import * as functions from "firebase-functions";
 import HttpReqGetter from "./httpReqGetter";
 import ClassroomService from "./classroomService";
 import { ClassroomErrorType } from "./data/classroomInfoResult";
-import { ClassroomInfoPostRequest } from "./data/classroomPostRequest";
 import {
-  ClassroomPostErrorType
-} from "./data/classroomPostResult";
+  ClassroomInfoPostRequest,
+  ClassroomImagePostRequest
+} from "./data/classroomPostRequest";
+import { ClassroomPostErrorType } from "./data/classroomPostResult";
 
 export default class ClassRoomFunction {
   async execFunc(req: functions.https.Request, res: functions.Response) {
@@ -104,9 +105,38 @@ export default class ClassRoomFunction {
           });
           break;
       }
-    } 
-    //else if (inputParam.getMethodType() === "classImage") {}
-    else {
+    } else if (inputParam.getMethodType() === "classImage") {
+      console.log("classImage");
+      const serv = new ClassroomService();
+      const result = await serv.postClassImage(
+        inputParam as ClassroomImagePostRequest
+      );
+      console.log("service result:", result);
+      switch (result.errorType) {
+        case ClassroomPostErrorType.none:
+        case ClassroomPostErrorType.partialError:
+          res.status(200).send({
+            successClassIdList: result.successFileList,
+            failClassIdList: result.failFileList
+          });
+          break;
+        case ClassroomPostErrorType.paramError:
+          res.status(400).send({
+            error: "param error"
+          });
+          break;
+        case ClassroomPostErrorType.exception:
+          res.status(400).send({
+            error: result.errorMessage
+          });
+          break;
+        default:
+          res.status(500).send({
+            error: "not support"
+          });
+          break;
+      }
+    } else {
       res.status(400).send({ error: "unexpected error" });
     }
   }

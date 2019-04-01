@@ -4,9 +4,13 @@ import {
   ClassroomErrorType
 } from "./data/classroomInfoResult";
 import ClassroomRepository from "./classroomRepository";
-import { ClassroomInfoPostRequest } from "./data/classroomPostRequest";
+import {
+  ClassroomInfoPostRequest,
+  ClassroomImagePostRequest
+} from "./data/classroomPostRequest";
 import {
   ClassroomPostResult,
+  ClassroomImageResult,
   ClassroomPostErrorType
 } from "./data/classroomPostResult";
 
@@ -60,6 +64,51 @@ export default class ClassroomService {
     }
   }
 
+  public async postClassImage(
+    req: ClassroomImagePostRequest
+  ): Promise<ClassroomImageResult> {
+    return new Promise((resolve, reject) => {
+      this.repository.postClassImage(req, (suc, fail) => {
+        try {
+          if (suc.length === 0) {
+            resolve(
+              new ClassroomImageResult(
+                suc,
+                fail,
+                "no succeeded fail",
+                ClassroomPostErrorType.exception
+              )
+            );
+            return;
+          }
+          if (suc.length > 0 && fail.length > 0) {
+            resolve(
+              new ClassroomImageResult(
+                suc,
+                fail,
+                "partial fail",
+                ClassroomPostErrorType.partialError
+              )
+            );
+            return;
+          } else {
+            resolve(
+              new ClassroomImageResult(
+                suc,
+                fail,
+                "",
+                ClassroomPostErrorType.none
+              )
+            );
+            return;
+          }
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+  }
+
   public async postClassInfo(
     req: ClassroomInfoPostRequest
   ): Promise<ClassroomPostResult> {
@@ -98,7 +147,7 @@ export default class ClassroomService {
         errorMsg,
         ClassroomPostErrorType.partialError
       );
-    } else if(result[0].length > 0) {
+    } else if (result[0].length > 0) {
       return new ClassroomPostResult(
         result[0],
         failList,
@@ -106,12 +155,12 @@ export default class ClassroomService {
         ClassroomPostErrorType.none
       );
     } else {
-       return new ClassroomPostResult(
+      return new ClassroomPostResult(
         result[0],
         failList,
         errorMsg,
         ClassroomPostErrorType.exception
-      );       
+      );
     }
   }
 }

@@ -7,6 +7,14 @@ export class ClassroomPostResult {
   ) {}
 }
 
+export class ClassroomImageResult {
+  constructor(
+    public successFileList: Array<string>,
+    public failFileList: Array<string>,
+    public errorMessage: string,
+    public errorType: ClassroomPostErrorType
+  ) {}
+}
 
 export enum ClassroomPostErrorType {
   none,

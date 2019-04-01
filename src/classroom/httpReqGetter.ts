@@ -28,17 +28,13 @@ export default class HttpReqGetter {
     req: functions.https.Request
   ): IClassroomPost | null {
     let res: IClassroomPost | null;
-
-    switch (req.get("content-type")) {
-      case "application/json":
-        res = this.getInfoPostRequestParam(req.body);
-        break;
-      case "multipart/form-data":
-        res = this.getInfoImageRequestParam(req);
-        break;
-      default:
-        res = null;
-        break;
+    const contentType = req.get("content-type") as string;
+    if (contentType === "application/json") {
+      res = this.getInfoPostRequestParam(req.body);
+    } else if (contentType.startsWith("multipart/form-data")) {
+      res = this.getInfoImageRequestParam(req);
+    } else {
+      res = null;
     }
     return res;
   }
