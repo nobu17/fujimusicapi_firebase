@@ -34,10 +34,9 @@ export default class HttpReqGetter {
     if (
       typeof body === "object" &&
       body.method === "authByToken" &&
-      typeof body.userId === "string" &&
       typeof body.token === "string"
     ) {
-      return new LoginTokenRequest(body.userId, body.token);
+      return new LoginTokenRequest(body.token);
     }    
     console.error("no match body");
     return null;

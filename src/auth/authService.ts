@@ -53,23 +53,6 @@ export default class AuthService {
         );
       }
     }
-    //トークン内のIdのと一致指定に場合はエラー
-    if (decodeUser.userId !== req.getUserId()) {
-      console.error(
-        "no match user between token and req:" +
-          decodeUser.userId +
-          "," +
-          req.getUserId()
-      );
-      return new AuthResult(
-        "",
-        "",
-        "",
-        "no match user between token and req:",
-        AuthErrorType.paramError
-      );
-    }
-
     if (
       decodeUser &&
       typeof decodeUser === "object" &&
