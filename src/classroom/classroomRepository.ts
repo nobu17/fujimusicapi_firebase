@@ -253,10 +253,10 @@ export default class ClassroomRepository {
 
     // This callback will be invoked after all uploaded files are saved.
     busboy.on("finish", async () => {
-      // wait until all finish
+      // wait until all file uplod is finished
       while (currentCount !== fileCount) {
         console.log("sleep:" + currentCount + "," + fileCount);
-        await this.sleep(300);
+        await this.sleep(400);
       }
       console.log("successList", successList);
       console.log("failList", failList);
