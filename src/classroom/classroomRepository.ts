@@ -214,7 +214,14 @@ export default class ClassroomRepository {
       // ファイルのアップロード
       file.on("end", () => {
         const dest =
-          this.rootDir + classId + "/" + classFName + "." + extension;
+          this.rootDir +
+          classId +
+          "/" +
+          this.classroomImageDirName +
+          "/" +
+          classFName +
+          "." +
+          extension;
         console.log(
           "upload file: " +
             filepath +
