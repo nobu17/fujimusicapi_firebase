@@ -77,19 +77,21 @@ export default class ClassroomRepository {
     const bucket = admin.storage().bucket(this.buketName);
     const dirNames = this.rootDir + classId + "/" + this.classroomImageDirName;
     const options = { prefix: dirNames };
-
+    const allowImage = [".png", ".jpg", ".jpeg"];
     try {
       // ファイル一覧を取得
       let [fileList] = await bucket.getFiles(options);
       if (fileList && fileList.length > 0) {
         for (const f of fileList) {
           // 署名付きURLを取得
-          const [url] = await f.getSignedUrl({
-            action: "read",
-            expires: "03-09-2491"
-          });
-          console.log("url", url);
-          imageList.push(url);
+          if (allowImage.find(x => f.name.toLowerCase().endsWith(x))) {
+            const [url] = await f.getSignedUrl({
+              action: "read",
+              expires: "03-09-2491"
+            });
+            console.log("url", url);
+            imageList.push(url);
+          }
         }
       }
       return imageList;
