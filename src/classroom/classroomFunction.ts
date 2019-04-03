@@ -117,8 +117,8 @@ export default class ClassRoomFunction {
         case ClassroomPostErrorType.none:
         case ClassroomPostErrorType.partialError:
           res.status(200).send({
-            successClassIdList: result.successFileList,
-            failClassIdList: result.failFileList
+            successFileList: result.successFileList,
+            failFileList: result.failFileList
           });
           break;
         case ClassroomPostErrorType.paramError:

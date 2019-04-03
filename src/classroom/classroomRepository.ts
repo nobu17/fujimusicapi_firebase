@@ -210,7 +210,12 @@ export default class ClassroomRepository {
       // fieldnameからClassIDとファイル名に分割
       const classId = fieldname.split("_")[0];
       const classFName = fieldname.split("_")[1];
-      const extension = filename.split(".")[1];
+      let extension = "";
+      if(mimetype.endsWith("png")) {
+          extension = "png";
+      } else if(mimetype.endsWith("jpg")) {
+          extension = "jpg";
+      }
       // Note that os.tmpdir() is an in-memory file system, so should
       // only be used for files small enough to fit in memory.
 
