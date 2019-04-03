@@ -65,6 +65,7 @@ export default class HttpReqGetter {
     req: functions.https.Request
   ): ClassroomImagePostRequest | null {
     if (req) {
+      console.log("reqdata", req);
       return new ClassroomImagePostRequest(req);
     }
     console.error("no match body");

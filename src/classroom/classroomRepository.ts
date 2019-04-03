@@ -4,7 +4,7 @@ import * as Busboy from "busboy";
 import * as path from "path";
 import * as os from "os";
 import * as fs from "fs";
-import { ClassroomInfo } from "./data/classroomInfoResult";
+import { ClassroomInfo, ImageInfo } from "./data/classroomInfoResult";
 import ClassroomInfoRequest from "./data/classroomInfoRequest";
 import {
   ClassroomInfoPostRequest,
@@ -72,8 +72,10 @@ export default class ClassroomRepository {
     return [classRoomInfoList, failClassIdList];
   }
 
-  private async getImageList(classId: string): Promise<Array<string> | null> {
-    const imageList = new Array<string>();
+  private async getImageList(
+    classId: string
+  ): Promise<Array<ImageInfo> | null> {
+    const imageList = new Array<ImageInfo>();
     const bucket = admin.storage().bucket(this.buketName);
     const dirNames = this.rootDir + classId + "/" + this.classroomImageDirName;
     const options = { prefix: dirNames };
@@ -90,7 +92,9 @@ export default class ClassroomRepository {
               expires: "03-09-2491"
             });
             console.log("url", url);
-            imageList.push(url);
+            imageList.push(
+              new ImageInfo(f.name.split("/").pop() as string, url)
+            );
           }
         }
       }
@@ -187,7 +191,7 @@ export default class ClassroomRepository {
     callback: (successList: Array<string>, failList: Array<string>) => void
   ) {
     const allowMimeTypes = ["image/png", "image/jpg"];
-    const bucket = admin.storage().bucket();
+    const bucket = admin.storage().bucket(this.buketName);
     const busboy = new Busboy({ headers: input.req.headers });
     const successList: Array<string> = new Array<string>();
     const failList: Array<string> = new Array<string>();
@@ -220,7 +224,6 @@ export default class ClassroomRepository {
           classId +
           "/" +
           this.classroomImageDirName +
-          "/" +
           classFName +
           "." +
           extension;

@@ -9,13 +9,17 @@ export class ClassroomInfoResult {
 }
 
 export class ClassroomInfo {
-  public imageList: Array<string> = new Array<string>();
+  public imageList: Array<ImageInfo> = new Array<ImageInfo>();
   constructor(
     public classId: string,
     public description: string,
     public lessonTimes: string,
     public lessonPlace: string
   ) {}
+}
+
+export class ImageInfo {
+  constructor(public fileName: string, public fileUrl: string) {}
 }
 
 export enum ClassroomErrorType {
