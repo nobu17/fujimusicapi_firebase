@@ -10,6 +10,8 @@ import {
   ClassroomInfoPostRequest,
   ClassroomImagePostRequest
 } from "./data/classroomPostRequest";
+import Common from "../common/common";
+import { Bucket } from "@google-cloud/storage";
 
 export default class ClassroomRepository {
   private readonly classroomFileName: string = "classInfo.json";
@@ -18,7 +20,7 @@ export default class ClassroomRepository {
   private buketName: string;
   constructor() {
     this.buketName = functions.config().classroom.bucket.name;
-    console.log("bucketName:", this.buketName);
+    //console.log("bucketName:", this.buketName);
   }
 
   public async getClassroomInfoList(
@@ -178,19 +180,11 @@ export default class ClassroomRepository {
     }
   }
 
-  async sleep(t: number) {
-    return await new Promise(r => {
-      setTimeout(() => {
-        r();
-      }, t);
-    });
-  }
-
   public postClassImage(
     input: ClassroomImagePostRequest,
     callback: (successList: Array<string>, failList: Array<string>) => void
   ) {
-    const allowMimeTypes = ["image/png", "image/jpg"];
+    const allowMimeTypes = ["image/png", "image/jpg", "image/jpeg"];
     const bucket = admin.storage().bucket(this.buketName);
     const busboy = new Busboy({ headers: input.req.headers });
     const successList: Array<string> = new Array<string>();
@@ -199,6 +193,9 @@ export default class ClassroomRepository {
     const tmpdir = os.tmpdir();
     let fileCount = 0;
     let currentCount = 0;
+
+    // 拡張子が異なる同名ファイルがある場合に削除するためにファイル名一覧を取得
+
     // This callback will be invoked for each file uploaded.
     busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
       if (!allowMimeTypes.find(x => x === mimetype.toLocaleLowerCase())) {
@@ -210,12 +207,8 @@ export default class ClassroomRepository {
       // fieldnameからClassIDとファイル名に分割
       const classId = fieldname.split("_")[0];
       const classFName = fieldname.split("_")[1];
-      let extension = "";
-      if(mimetype.endsWith("png")) {
-          extension = "png";
-      } else if(mimetype.endsWith("jpg")) {
-          extension = "jpg";
-      }
+      // ファイル名重複時に上書きできないので拡張子はjpgに統一
+      const extension = "jpg";
       // Note that os.tmpdir() is an in-memory file system, so should
       // only be used for files small enough to fit in memory.
 
@@ -273,7 +266,7 @@ export default class ClassroomRepository {
       // wait until all file uplod is finished
       while (currentCount !== fileCount) {
         console.log("sleep:" + currentCount + "," + fileCount);
-        await this.sleep(400);
+        await Common.sleep(400);
       }
       console.log("successList", successList);
       console.log("failList", failList);
