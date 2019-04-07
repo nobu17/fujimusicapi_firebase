@@ -14,5 +14,10 @@ if (!process.env.FUNCTION_NAME || process.env.FUNCTION_NAME === "infoFunction") 
 if (!process.env.FUNCTION_NAME || process.env.FUNCTION_NAME === "classroomFunction") {
   exports["classroomFunction"] = require("./classroom/classroom_index");
 }
+// トップページ関数
+if (!process.env.FUNCTION_NAME || process.env.FUNCTION_NAME === "topPageFunction") {
+  exports["topPageFunction"] = require("./topPage/topPage_index");
+}
+
 
 

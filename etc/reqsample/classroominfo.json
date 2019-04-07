@@ -1,0 +1,10 @@
+{
+  "classList": [
+    {
+      "classId": "shimizu",
+      "description": "説明",
+      "lessonTimes": "時間",
+      "lessonPlace": "場所"
+    }
+  ]
+}
