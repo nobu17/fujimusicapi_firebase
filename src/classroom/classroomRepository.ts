@@ -11,7 +11,6 @@ import {
   ClassroomImagePostRequest
 } from "./data/classroomPostRequest";
 import Common from "../common/common";
-import { Bucket } from "@google-cloud/storage";
 
 export default class ClassroomRepository {
   private readonly classroomFileName: string = "classInfo.json";

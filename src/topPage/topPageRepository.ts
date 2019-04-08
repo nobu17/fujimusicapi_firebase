@@ -20,7 +20,7 @@ export default class TopPageRepository {
     input: TopPageImagePostRequest,
     callback: (successList: Array<string>, failList: Array<string>) => void
   ) {
-    const allowMimeTypes = [ "image/jpg", "image/jpeg"];
+    const allowMimeTypes = ["image/png", "image/jpg", "image/jpeg"];
     const bucket = admin.storage().bucket(this.buketName);
     const busboy = new Busboy({ headers: input.req.headers });
     const successList: Array<string> = new Array<string>();
@@ -39,10 +39,8 @@ export default class TopPageRepository {
       }
       // fieldnameをファイル名として使用
       const imageNo = fieldname;
-      let extension = "";;
-      if (mimetype.endsWith("jpg") || mimetype.endsWith("jpeg")) {
-        extension = "jpg";
-      }
+      // 重複時に上書きさせるためにファイル拡張子はjpgに統一
+      const extension = "jpg";
       // Note that os.tmpdir() is an in-memory file system, so should
       // only be used for files small enough to fit in memory.
 
