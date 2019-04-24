@@ -3,7 +3,6 @@ import {
   TopPageImagePostResult,
   TopPagePostErrorType
 } from "./data/topPageResult";
-
 import TopPageRepository from "./topPageRepository";
 
 export default class TopPageService {

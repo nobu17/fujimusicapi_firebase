@@ -1,10 +1,10 @@
 import * as functions from "firebase-functions";
 import HttpReqGetter from "./httpReqGetter";
-import TopPageService from "./topPageService";
-import { TopPageImagePostRequest } from "./data/topPageRequest";
-import { TopPagePostErrorType } from "./data/topPageResult";
+import AlbumService from "./albumService";
+import { AlbumPostRequest } from "./data/albumPostRequest";
+import { AlbumPostErrorType } from "./data/albumPostResult";
 
-export default class TopPageFunction {
+export default class AlbumFunction {
   async execFunc(req: functions.https.Request, res: functions.Response) {
     switch (req.method) {
       case "GET":
@@ -33,31 +33,30 @@ export default class TopPageFunction {
   }
   async handlePost(req: functions.https.Request, res: functions.Response) {
     const reqGetter = new HttpReqGetter();
-    const inputParam = reqGetter.getClassroomInfoRequest(req);
+    const inputParam = reqGetter.getAlbumPostRequest(req);
     if (!inputParam) {
       res.status(400).send({ error: "paramError" });
       return;
     }
-    if (inputParam.getMethodType() === "topImage") {
-      const serv = new TopPageService();
+    if (inputParam.getMethodType() === "albumPost") {
+      const serv = new AlbumService();
       const result = await serv.postTopPageImages(
-        inputParam as TopPageImagePostRequest
+        inputParam as AlbumPostRequest
       );
       console.log("service result:", result);
       switch (result.errorType) {
-        case TopPagePostErrorType.none:
-        case TopPagePostErrorType.partialError:
+        case AlbumPostErrorType.none:
+        case AlbumPostErrorType.partialError:
           res.status(200).send({
-            successFileList: result.successFileList,
-            failFileList: result.failFileList
+            result
           });
           break;
-        case TopPagePostErrorType.paramError:
+        case AlbumPostErrorType.paramError:
           res.status(400).send({
             error: "param error"
           });
           break;
-        case TopPagePostErrorType.exception:
+        case AlbumPostErrorType.exception:
           res.status(400).send({
             error: result.errorMessage
           });
@@ -69,7 +68,7 @@ export default class TopPageFunction {
           break;
       }
     } else {
-      res.status(400).send({ error: "paramError no support type param" });
+      res.status(400).send({ error: "paramError no support param type" });
       return;
     }
   }
