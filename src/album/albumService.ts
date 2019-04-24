@@ -14,10 +14,14 @@ export default class AlbumService {
       this.repository.postAlbumImages(req, res => {
         try {
           const result = new AlbumPostResult();
-          if (res) {
+          if (res && res.errorMessage !== "") {
             result.setParam(res);
           } else {
-            result.errorMessage = "un excepted error";
+            if (res && !res.errorMessage) {
+              result.errorMessage = "un excepted error";
+            } else {
+              result.errorMessage = res.errorMessage;
+            }
             result.errorType = AlbumPostErrorType.exception;
           }
           resolve(result);

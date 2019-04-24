@@ -9,7 +9,6 @@ import Common from "../common/common";
 import { AlbumPostRequest } from "./data/albumPostRequest";
 import { Bucket } from "@google-cloud/storage";
 
-
 class FileInput {
   constructor(
     public file: NodeJS.ReadableStream,
@@ -31,10 +30,12 @@ export class AlbumRepositoryPostResult {
   public uploadResults: FileResult;
   public moveResults: FileResult;
   public removeResults: FileResult;
+  public errorMessage: string;
   constructor() {
     this.uploadResults = new FileResult();
     this.moveResults = new FileResult();
     this.removeResults = new FileResult();
+    this.errorMessage = "";
   }
 }
 
@@ -131,17 +132,16 @@ export class AlbumRepositoryPostInfo {
   }
 }
 
-
 export class AlbumRepository {
   private buketName: string;
-  private readonly rootDir: string = "album/";
+  private readonly rootDir: string = "albums/";
   constructor() {
     this.buketName = functions.config().album.bucket.name;
   }
 
   public postAlbumImages(
     input: AlbumPostRequest,
-    callback: (result: AlbumRepositoryPostResult | null) => void
+    callback: (result: AlbumRepositoryPostResult) => void
   ) {
     const postInfo = new AlbumRepositoryPostInfo(this.buketName, this.rootDir);
     const allowMimeTypes = ["image/png", "image/jpg", "image/jpeg"];
@@ -186,7 +186,8 @@ export class AlbumRepository {
       if (validateRes !== "") {
         //バリデーションエラー
         console.error("valition error", validateRes);
-        callback(null);
+        postInfo.results.errorMessage = validateRes;
+        callback(postInfo.results);
         return;
       }
       // 画像のアップロード、編集
