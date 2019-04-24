@@ -83,7 +83,7 @@ export default class ClassroomRepository {
     const allowImage = [".png", ".jpg", ".jpeg"];
     try {
       // ファイル一覧を取得
-      let [fileList] = await bucket.getFiles(options);
+      const [fileList] = await bucket.getFiles(options);
       if (fileList && fileList.length > 0) {
         for (const f of fileList) {
           // 署名付きURLを取得

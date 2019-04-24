@@ -16,7 +16,7 @@ export class ClassroomInfoPostRequest implements IClassroomPost {
     let finalMsg = "";
     // クラス情報ごとにチェック
     for (const cla of this.classList) {
-      let msg = cla.validateParam();
+      const msg = cla.validateParam();
       if (msg !== "") {
         finalMsg = msg;
         break;

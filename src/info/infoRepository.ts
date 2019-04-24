@@ -53,7 +53,7 @@ export default class InfoRepository {
     //ファイル名取得
     const fileName = this.getFileNameByPostDate(req.postInfo.postDate);
     // ファイル読み込み
-    let infoList = await this.readInfoList(fileName);
+    const infoList = await this.readInfoList(fileName);
     if (infoList === null) {
       return [null, "read file is fail:" + fileName];
     }
@@ -190,7 +190,7 @@ export default class InfoRepository {
     const options = { prefix: this.rootDir };
     try {
       // ファイル一覧を取得
-      let [fileList] = await bucket.getFiles(options);
+      const [fileList] = await bucket.getFiles(options);
       if (fileList && fileList.length > 0) {
         //拡張子を除く
         list = fileList
