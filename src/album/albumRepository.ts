@@ -64,7 +64,7 @@ export class AlbumRepositoryPostInfo {
   // 入力チェック
   public validate(): string {
     if (!this.albumId || this.albumId === "") {
-      return "iregular albumId";
+      return "not eixsts albumId";
     }
     return "";
   }
