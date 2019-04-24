@@ -14,7 +14,7 @@ export default class AlbumService {
       this.repository.postAlbumImages(req, res => {
         try {
           const result = new AlbumPostResult();
-          if (res && res.errorMessage !== "") {
+          if (res && res.errorMessage === "") {
             result.setParam(res);
           } else {
             if (res && !res.errorMessage) {
