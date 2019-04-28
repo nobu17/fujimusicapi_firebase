@@ -25,13 +25,13 @@ export default class HttpReqGetter {
     const contentType = req.get("content-type") as string;
     if (contentType.startsWith("application/json")) {
       if (
-        typeof req.body === "object" &&
         Array.isArray(req.body.albumIdList) &&
         req.body.albumIdList.every((x: any) => typeof x === "string")
       ) {
         res = new AlbumDeleteRequest(req.body.albumIdList);
+      } else {
+        console.error("no match body:", req.body);
       }
-      console.error("no match body");
     }
     return res;
   }

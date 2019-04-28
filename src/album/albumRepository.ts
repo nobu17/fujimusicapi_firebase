@@ -71,7 +71,8 @@ class AlbumRepositoryDeleteInfo extends AlbumRepositoryBase {
   public async deleteAlbum(albumId: string) {
     this.albumId = albumId;
     try {
-      await this.bucket.file(this.getDir()).delete();
+      const opt = { prefix: this.getDir() };
+      await this.bucket.deleteFiles(opt);
       await this.getAlbumInfoDb()
         .doc(this.albumId)
         .delete();
