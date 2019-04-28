@@ -7,6 +7,17 @@ export enum AlbumPostErrorType {
   exception
 }
 
+export class AlbumDeleteResult {
+  public errorMessage: string;
+  public errorType: AlbumPostErrorType;
+  public removeResults: FileResult;
+  constructor() {
+    this.errorMessage = "";
+    this.errorType = AlbumPostErrorType.none;
+    this.removeResults = new FileResult();
+  }
+}
+
 export class AlbumPostResult {
   public uploadResults: FileResult;
   public moveResults: FileResult;

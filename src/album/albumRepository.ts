@@ -6,15 +6,16 @@ import * as os from "os";
 import * as fs from "fs";
 
 import Common from "../common/common";
-import { AlbumPostRequest } from "./data/albumPostRequest";
+import { AlbumPostRequest, AlbumDeleteRequest } from "./data/albumPostRequest";
 import { Bucket } from "@google-cloud/storage";
+import { CollectionReference } from "@google-cloud/firestore";
 
 class FileInput {
   constructor(
-    public file: NodeJS.ReadableStream,
     public filedName: string,
     public fileName: string,
-    public mimetype: string
+    public mimetype: string,
+    public tempUploadPath: string
   ) {}
 }
 
@@ -38,38 +39,175 @@ export class AlbumRepositoryPostResult {
     this.errorMessage = "";
   }
 }
+export class AlbumRepositoryDeleteResult {
+  public removeResults: FileResult;
+  constructor() {
+    this.removeResults = new FileResult();
+  }
+}
 
-export class AlbumRepositoryPostInfo {
+class AlbumRepositoryBase {
+  public albumId: string;
+  protected bucket: Bucket;
+  constructor(public bucketName: string, public rootDir: string) {
+    this.albumId = "";
+    this.bucket = admin.storage().bucket(bucketName);
+  }
+  // アルバムのディレクトリを取得
+  protected getDir(): string {
+    return this.rootDir + this.albumId + "/";
+  }
+  protected getAlbumInfoDb(): CollectionReference {
+    return admin.firestore().collection("albumInfo");
+  }
+}
+
+class AlbumRepositoryDeleteInfo extends AlbumRepositoryBase {
+  public result: FileResult;
+  constructor(public bucketName: string, public rootDir: string) {
+    super(bucketName, rootDir);
+    this.result = new FileResult();
+  }
+  public async deleteAlbum(albumId: string) {
+    this.albumId = albumId;
+    try {
+      await this.bucket.file(this.getDir()).delete();
+      await this.getAlbumInfoDb()
+        .doc(this.albumId)
+        .delete();
+      this.result.successList.push(this.albumId);
+    } catch (err) {
+      console.error("delete error:" + this.albumId, err);
+      this.result.failList.push(this.albumId);
+    }
+  }
+}
+
+class AlbumRepositoryPostInfo extends AlbumRepositoryBase {
   public removeImages: Array<string>;
   public moveImages: Map<string, string>;
   public uploadImages: Array<FileInput>;
-  public albumId: string;
+
   public albumTitle: string;
+  public albumEventDate: string;
   public albumDescritpion: string;
 
   public results: AlbumRepositoryPostResult;
 
-  private bucket: Bucket;
-  constructor(public bucketName: string, public rootDir: string) {
-    this.albumId = "";
+  private uploadCount: number;
+  private tempDir: string;
+  constructor(bucketName: string, rootDir: string) {
+    super(bucketName, rootDir);
+
     this.albumTitle = "";
     this.albumDescritpion = "";
+    this.albumEventDate = "";
     this.removeImages = [];
     this.moveImages = new Map<string, string>();
     this.uploadImages = [];
 
-    this.bucket = admin.storage().bucket(bucketName);
+    this.tempDir = os.tmpdir();
+    this.uploadCount = 0;
     this.results = new AlbumRepositoryPostResult();
   }
   // 入力チェック
   public validate(): string {
-    if (!this.albumId || this.albumId === "") {
-      return "not eixsts albumId";
+    if (!this.albumTitle || this.albumTitle === "") {
+      return "not eixsts albumTitle";
+    }
+    if (!this.albumDescritpion || this.albumDescritpion === "") {
+      return "not eixsts albumDescritpion";
+    }
+    if (!this.albumEventDate || this.albumEventDate === "") {
+      return "not eixsts albumEventDate";
     }
     return "";
   }
+  // upsert album info for document db
+  public async upsertAlbumDocument() {
+    console.log("upsert start");
+    //albumIdがあれば更新なければ新規
+    if (this.albumId) {
+      console.log("update");
+      const docref = this.getAlbumInfoDb().doc(this.albumId);
+      const data = await docref.get();
+      console.log("docref", docref);
+      // update
+      if (data.exists) {
+        await docref.update({
+          title: this.albumTitle,
+          description: this.albumDescritpion,
+          eventDate: this.albumEventDate
+        });
+        return;
+      }
+    }
+    console.log("add start:", {
+      title: this.albumTitle,
+      description: this.albumDescritpion,
+      eventDate: this.albumEventDate
+    });
+    // 無ければ新規に追加
+    const added = await this.getAlbumInfoDb().add({
+      title: this.albumTitle,
+      description: this.albumDescritpion,
+      eventDate: this.albumEventDate
+    });
+    // get  from added
+    this.albumId = added.id;
+    console.log("add end:", added);
+    console.log("new albumId:", this.albumId);
+  }
+  private async getImageList(): Promise<Array<string>> {
+    const options = { prefix: this.getDir() };
+    let [fileList] = await this.bucket.getFiles(options);
+    // 画像ファイルだけ名前順に昇順ソート
+    const imageList = fileList
+      .filter(x => x.name.toLowerCase().endsWith(".jpg"))
+      .sort((a, b) => {
+        if (a.name < b.name) return -1;
+        if (a.name > b.name) return 1;
+        return 0;
+      })
+      .map(x => x.name);
+
+    for (let i = 0; i < imageList.length; i++) {
+      imageList[i] = `https://firebasestorage.googleapis.com/v0/b/${
+        this.bucketName
+      }/o/${encodeURIComponent(imageList[i])}?alt=media`;
+    }
+    return imageList;
+  }
+  // make datesotre for albumInfo ImageList
+  public async updateAlbumImageList() {
+    const imageList = await this.getImageList();
+    console.log("imageList:", imageList);
+    const docref = this.getAlbumInfoDb().doc(this.albumId);
+    const data = await docref.get();
+    if (data.exists) {
+      await docref.update({
+        imageList: imageList
+      });
+    } else {
+      throw new Error("no exists data. albumId:" + this.albumId);
+    }
+  }
+  public uploadImage(
+    file: NodeJS.ReadableStream,
+    fieldName: string,
+    fileName: string,
+    mimetype: string
+  ): void {
+    const filePath = path.join(this.tempDir, fieldName + ".jpg");
+    file.pipe(fs.createWriteStream(filePath));
+    this.uploadCount++;
+    this.uploadImages.push(
+      new FileInput(fieldName, fileName, mimetype, filePath)
+    );
+  }
   // 画像の削除
   public async removeImagesAsync(): Promise<void> {
+    console.log("remove image start");
     for (const image of this.removeImages) {
       try {
         await this.bucket.file(this.getDir() + image).delete();
@@ -82,53 +220,46 @@ export class AlbumRepositoryPostInfo {
   }
   // 画像の移動
   public async moveImagesAsync(): Promise<void> {
+    console.log("move image start");
     for (const temp of this.moveImages.entries()) {
       try {
+        console.log("from:" + temp[0] + " to:" + temp[1]);
         await this.bucket
           .file(this.getDir() + temp[0])
           .move(this.getDir() + temp[1]);
-        this.results.uploadResults.successList.push(temp[0]);
+        this.results.moveResults.successList.push(temp[0]);
       } catch (err) {
         console.error("move error:" + temp[0] + "," + temp[1], err);
-        this.results.uploadResults.failList.push(temp[0]);
+        this.results.moveResults.failList.push(temp[0]);
       }
     }
   }
   public async uploadImagesAsync() {
-    let fileCount = 0;
+    console.log("upload image start");
     let finishCount = 0;
-    const tmpdir = os.tmpdir();
     for (const f of this.uploadImages) {
-      const filePath = path.join(tmpdir, f.filedName + ".jpg");
-      f.file.pipe(fs.createWriteStream(filePath));
-      fileCount++;
       // バケットへファイルのアップロード
-      f.file.on("end", async () => {
-        const dest = this.getDir() + f.filedName + ".jpg";
-        try {
-          await this.bucket.upload(filePath, {
-            destination: dest,
-            metadata: { contentType: f.mimetype }
-          });
-          this.results.uploadResults.successList.push(f.fileName);
-        } catch (err) {
-          console.error("upload error:" + dest, err);
-          this.results.uploadResults.failList.push(f.fileName);
-        } finally {
-          finishCount++;
-        }
-      });
+      const dest = this.getDir() + f.filedName + ".jpg";
+      try {
+        console.log("upload file:", dest);
+        await this.bucket.upload(f.tempUploadPath, {
+          destination: dest,
+          metadata: { contentType: f.mimetype }
+        });
+        this.results.uploadResults.successList.push(f.fileName);
+      } catch (err) {
+        console.error("upload error:" + dest, err);
+        this.results.uploadResults.failList.push(f.fileName);
+      } finally {
+        finishCount++;
+      }
     }
     //アップロードが終わるまで待機
     // wait until all file uplod is finished
-    while (finishCount !== fileCount) {
-      console.log("sleep:" + finishCount + "," + fileCount);
+    while (finishCount !== this.uploadCount) {
+      console.log("sleep:" + finishCount + "," + this.uploadCount);
       await Common.sleep(400);
     }
-  }
-  // アルバムのディレクトリを取得
-  private getDir(): string {
-    return this.rootDir + this.albumId + "/";
   }
 }
 
@@ -139,7 +270,19 @@ export class AlbumRepository {
     this.buketName = functions.config().album.bucket.name;
   }
 
-  public postAlbumImages(
+  public async deleteAlbum(
+    req: AlbumDeleteRequest
+  ): Promise<AlbumRepositoryDeleteResult> {
+    const delInfo = new AlbumRepositoryDeleteInfo(this.buketName, this.rootDir);
+    for (const albumId of req.albumIdList) {
+      await delInfo.deleteAlbum(albumId);
+    }
+    const res = new AlbumRepositoryDeleteResult();
+    res.removeResults = delInfo.result;
+    return res;
+  }
+
+  public postAlbum(
     input: AlbumPostRequest,
     callback: (result: AlbumRepositoryPostResult) => void
   ) {
@@ -148,7 +291,7 @@ export class AlbumRepository {
     const busboy = new Busboy({ headers: input.req.headers });
 
     busboy.on("field", (fieldname, val, fieldnameTruncated, valTruncated) => {
-      if (fieldname === "title") {
+      if (fieldname === "albumTitle") {
         postInfo.albumTitle = val;
       } else if (fieldname === "albumDescritpion") {
         postInfo.albumDescritpion = val;
@@ -163,6 +306,8 @@ export class AlbumRepository {
         }
       } else if (fieldname === "albumId") {
         postInfo.albumId = val;
+      } else if (fieldname === "eventDate") {
+        postInfo.albumEventDate = val;
       }
     });
 
@@ -174,14 +319,11 @@ export class AlbumRepository {
         file.resume();
         return;
       }
-      postInfo.uploadImages.push(
-        new FileInput(file, fieldname, filename, mimetype)
-      );
+      postInfo.uploadImage(file, fieldname, filename, mimetype);
     });
 
     // This callback will be invoked after all uploaded files are saved.
     busboy.on("finish", async () => {
-      // 削除と移動
       const validateRes = postInfo.validate();
       if (validateRes !== "") {
         //バリデーションエラー
@@ -190,10 +332,17 @@ export class AlbumRepository {
         callback(postInfo.results);
         return;
       }
+      console.log("start final");
+      // documentdbの更新
+      await postInfo.upsertAlbumDocument();
+      console.log("upsert end");
       // 画像のアップロード、編集
       await postInfo.uploadImagesAsync();
       await postInfo.removeImagesAsync();
       await postInfo.moveImagesAsync();
+      // アップロード後にimageListを更新
+      console.log("update imageList");
+      await postInfo.updateAlbumImageList();
       console.log("result", postInfo.results);
       callback(postInfo.results);
     });
