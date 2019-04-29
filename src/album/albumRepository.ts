@@ -122,6 +122,9 @@ class AlbumRepositoryPostInfo extends AlbumRepositoryBase {
     if (!this.albumEventDate || this.albumEventDate === "") {
       return "not eixsts albumEventDate";
     }
+    if (!Common.isDate(this.albumEventDate, "-")) {
+      return "invalid albumEventDate:" + this.albumEventDate;
+    }
     return "";
   }
   // upsert album info for document db
@@ -138,7 +141,7 @@ class AlbumRepositoryPostInfo extends AlbumRepositoryBase {
         await docref.update({
           title: this.albumTitle,
           description: this.albumDescritpion,
-          eventDate: this.albumEventDate
+          eventDate: new Date(this.albumEventDate)
         });
         return;
       }
@@ -152,7 +155,7 @@ class AlbumRepositoryPostInfo extends AlbumRepositoryBase {
     const added = await this.getAlbumInfoDb().add({
       title: this.albumTitle,
       description: this.albumDescritpion,
-      eventDate: this.albumEventDate
+      eventDate: new Date(this.albumEventDate)
     });
     // get  from added
     this.albumId = added.id;
