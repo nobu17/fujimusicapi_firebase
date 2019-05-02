@@ -10,6 +10,7 @@ export default class Common {
     if (request_key && request_key === apiKey) {
       return true;
     }
+    console.error("error api key is:"+ request_key);
     return false;
   }
   // 指定ミリ秒待機

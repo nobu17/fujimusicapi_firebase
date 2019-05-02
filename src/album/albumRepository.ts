@@ -162,38 +162,45 @@ class AlbumRepositoryPostInfo extends AlbumRepositoryBase {
     console.log("add end:", added);
     console.log("new albumId:", this.albumId);
   }
-  private async getImageList(): Promise<Array<string>> {
+  private async getImageListAndThumbnail(): Promise<[Array<string>, string]> {
     const options = { prefix: this.getDir() };
     let [fileList] = await this.bucket.getFiles(options);
     // 画像ファイルだけ名前順に昇順ソート(サムネイルは除外)
     const imageList = fileList
-      .filter(x => x.name.toLowerCase().endsWith(".jpg") && x.name.toLocaleLowerCase() != "thumbnail.jpg")
+      .filter(x => x.name.toLowerCase().endsWith(".jpg"))
       .sort((a, b) => {
         if (a.name < b.name) return -1;
         if (a.name > b.name) return 1;
         return 0;
       })
       .map(x => x.name);
-
+    let thubmnal = "";
+    const resultImageList = [];
     for (let i = 0; i < imageList.length; i++) {
-      imageList[i] = `https://firebasestorage.googleapis.com/v0/b/${
-        this.bucketName
-      }/o/${encodeURIComponent(imageList[i])}?alt=media`;
+      if (imageList[i].toLocaleLowerCase().endsWith("thumbnail.jpg")) {
+        thubmnal = `https://firebasestorage.googleapis.com/v0/b/${
+          this.bucketName
+        }/o/${encodeURIComponent(imageList[i])}?alt=media`;
+      } else {
+        resultImageList.push(
+          `https://firebasestorage.googleapis.com/v0/b/${
+            this.bucketName
+          }/o/${encodeURIComponent(imageList[i])}?alt=media`
+        );
+      }
     }
-    return imageList;
+    return [resultImageList, thubmnal];
   }
   // make datesotre for albumInfo ImageList
   public async updateAlbumImageListAndThumbnail() {
-    const imageList = await this.getImageList();
+    const imageList = await this.getImageListAndThumbnail();
     console.log("imageList:", imageList);
     const docref = this.getAlbumInfoDb().doc(this.albumId);
     const data = await docref.get();
     if (data.exists) {
       await docref.update({
-        imageList: imageList,
-        thumbnail: `https://firebasestorage.googleapis.com/v0/b/${
-        this.bucketName
-      }/o/${encodeURIComponent("thumbnail.jpg")}?alt=media`
+        imageList: imageList[0],
+        thumbnail: imageList[1]
       });
     } else {
       throw new Error("no exists data. albumId:" + this.albumId);
@@ -344,8 +351,8 @@ export class AlbumRepository {
       await postInfo.upsertAlbumDocument();
       console.log("upsert end");
       // 画像のアップロード、編集
-      await postInfo.uploadImagesAsync();
       await postInfo.removeImagesAsync();
+      await postInfo.uploadImagesAsync();
       await postInfo.moveImagesAsync();
       // アップロード後にimageListを更新
       console.log("update imageList");
