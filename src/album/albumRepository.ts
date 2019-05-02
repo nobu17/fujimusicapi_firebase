@@ -165,9 +165,9 @@ class AlbumRepositoryPostInfo extends AlbumRepositoryBase {
   private async getImageList(): Promise<Array<string>> {
     const options = { prefix: this.getDir() };
     let [fileList] = await this.bucket.getFiles(options);
-    // 画像ファイルだけ名前順に昇順ソート
+    // 画像ファイルだけ名前順に昇順ソート(サムネイルは除外)
     const imageList = fileList
-      .filter(x => x.name.toLowerCase().endsWith(".jpg"))
+      .filter(x => x.name.toLowerCase().endsWith(".jpg") && x.name.toLocaleLowerCase() != "thumbnail.jpg")
       .sort((a, b) => {
         if (a.name < b.name) return -1;
         if (a.name > b.name) return 1;
@@ -183,14 +183,17 @@ class AlbumRepositoryPostInfo extends AlbumRepositoryBase {
     return imageList;
   }
   // make datesotre for albumInfo ImageList
-  public async updateAlbumImageList() {
+  public async updateAlbumImageListAndThumbnail() {
     const imageList = await this.getImageList();
     console.log("imageList:", imageList);
     const docref = this.getAlbumInfoDb().doc(this.albumId);
     const data = await docref.get();
     if (data.exists) {
       await docref.update({
-        imageList: imageList
+        imageList: imageList,
+        thumbnail: `https://firebasestorage.googleapis.com/v0/b/${
+        this.bucketName
+      }/o/${encodeURIComponent("thumbnail.jpg")}?alt=media`
       });
     } else {
       throw new Error("no exists data. albumId:" + this.albumId);
@@ -328,6 +331,7 @@ export class AlbumRepository {
 
     // This callback will be invoked after all uploaded files are saved.
     busboy.on("finish", async () => {
+      console.log("post info:", postInfo);
       const validateRes = postInfo.validate();
       if (validateRes !== "") {
         //バリデーションエラー
@@ -336,7 +340,6 @@ export class AlbumRepository {
         callback(postInfo.results);
         return;
       }
-      console.log("start final");
       // documentdbの更新
       await postInfo.upsertAlbumDocument();
       console.log("upsert end");
@@ -346,7 +349,7 @@ export class AlbumRepository {
       await postInfo.moveImagesAsync();
       // アップロード後にimageListを更新
       console.log("update imageList");
-      await postInfo.updateAlbumImageList();
+      await postInfo.updateAlbumImageListAndThumbnail();
       console.log("result", postInfo.results);
       callback(postInfo.results);
     });
