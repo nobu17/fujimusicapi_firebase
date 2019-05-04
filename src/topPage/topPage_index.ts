@@ -7,8 +7,9 @@ import TopPageFunction from "./topPageFunction";
 const cors = corsLib();
 
 // 教室情報関数
-module.exports = functions.https.onRequest(
-  async (request, response) => {
+module.exports = functions
+  .region("asia-northeast1")
+  .https.onRequest(async (request, response) => {
     return cors(request, response, async () => {
       // check auth
       if (
@@ -24,5 +25,4 @@ module.exports = functions.https.onRequest(
         response.status(400).send({ error: "not authorized" });
       }
     });
-  }
-);
+  });

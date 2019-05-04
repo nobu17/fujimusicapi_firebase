@@ -258,7 +258,10 @@ class AlbumRepositoryPostInfo extends AlbumRepositoryBase {
         console.log("upload file:", dest);
         await this.bucket.upload(f.tempUploadPath, {
           destination: dest,
-          metadata: { contentType: f.mimetype }
+          metadata: {
+            contentType: f.mimetype,
+            cacheControl: "public,max-age=300"
+          }
         });
         this.results.uploadResults.successList.push(f.fileName);
       } catch (err) {

@@ -6,8 +6,9 @@ import InfoFunction from "./infoFunction";
 
 const cors = corsLib();
 
-module.exports = functions.https.onRequest(
-  async (request, response) => {
+module.exports = functions
+  .region("asia-northeast1")
+  .https.onRequest(async (request, response) => {
     return cors(request, response, async () => {
       // check auth
       if (Common.IsAuthrizedRequest(request, functions.config().info.apikey)) {
@@ -21,5 +22,4 @@ module.exports = functions.https.onRequest(
         response.status(400).send({ error: "not authorized" });
       }
     });
-  }
-);
+  });
