@@ -124,7 +124,7 @@ export default class ClassroomService {
         ClassroomPostErrorType.paramError
       );
     }
-    const result = await this.repository.postClassInfo(req);
+    const result = await this.repository.postClassInfoToStore(req);
     if (!result) {
       return new ClassroomPostResult(
         [],

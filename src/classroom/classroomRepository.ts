@@ -8,8 +8,10 @@ import { ClassroomInfo, ImageInfo } from "./data/classroomInfoResult";
 import ClassroomInfoRequest from "./data/classroomInfoRequest";
 import {
   ClassroomInfoPostRequest,
-  ClassroomImagePostRequest
+  ClassroomImagePostRequest,
+  ClassroomInfo as ClassroomPostInfo
 } from "./data/classroomPostRequest";
+import { CollectionReference } from "@google-cloud/firestore";
 import Common from "../common/common";
 
 export default class ClassroomRepository {
@@ -165,6 +167,49 @@ export default class ClassroomRepository {
     return [successList, failList];
   }
 
+  public async postClassInfoToStore(
+    req: ClassroomInfoPostRequest
+  ): Promise<[Array<string>, Map<string, string>] | null> {
+    const successList = new Array<string>();
+    const failList = new Map<string, string>();
+    // クラス別に保存
+    for (const cla of req.classList) {
+      try {
+        await this.postClassInfoToFireStore(cla);
+        successList.push(cla.classId);
+      } catch (err) {
+        console.error("save store is fail:" + cla.classId, err);
+        failList.set(cla.classId, "save store is fail");
+      }
+    }
+    return [successList, failList];
+  }
+
+  private async postClassInfoToFireStore(
+    req: ClassroomPostInfo
+  ): Promise<void> {
+    const docref = this.getClassInfoDb().doc(req.classId);
+    const data = await docref.get();
+    if (data.exists) {
+      await docref.update({
+        description: req.description,
+        lessonPlace: req.lessonPlace,
+        lessonTimes: req.lessonTimes
+      });
+    } else {
+      await this.getClassInfoDb().add({
+        id: req.classId,
+        description: req.description,
+        lessonPlace: req.lessonPlace,
+        lessonTimes: req.lessonTimes
+      });
+    }
+  }
+
+  protected getClassInfoDb(): CollectionReference {
+    return admin.firestore().collection("classRoomInfo");
+  }
+
   private async uploadFile(
     jsonString: string,
     fileName: string
@@ -189,6 +234,8 @@ export default class ClassroomRepository {
     const successList: Array<string> = new Array<string>();
     const failList: Array<string> = new Array<string>();
 
+    const classIdList: Array<string> = new Array<string>();
+
     const tmpdir = os.tmpdir();
     let fileCount = 0;
     let currentCount = 0;
@@ -208,8 +255,8 @@ export default class ClassroomRepository {
       const classFName = fieldname.split("_")[1];
       // ファイル名重複時に上書きできないので拡張子はjpgに統一
       const extension = "jpg";
-      // Note that os.tmpdir() is an in-memory file system, so should
-      // only be used for files small enough to fit in memory.
+
+      classIdList.push(classId);
 
       const filepath = path.join(tmpdir, classFName + "." + extension);
       file.pipe(fs.createWriteStream(filepath));
@@ -267,6 +314,10 @@ export default class ClassroomRepository {
         console.log("sleep:" + currentCount + "," + fileCount);
         await Common.sleep(400);
       }
+      // update datestore
+      const classIds = Array.from(new Set(classIdList)); //get rid of duplacated classids
+      console.log("update store", classIds);
+      await this.updateImageListToFireStore(classIds);
       console.log("successList", successList);
       console.log("failList", failList);
       callback(successList, failList);
@@ -275,5 +326,24 @@ export default class ClassroomRepository {
     // The raw bytes of the upload will be in req.rawBody. Send it to
     // busboy, and get a callback when it's finished.
     busboy.end(input.req.rawBody);
+  }
+
+  private async updateImageListToFireStore(classIdList: Array<string>) {
+    for (const classId of classIdList) {
+      const images = await this.getImageList(classId);
+      const docref = this.getClassInfoDb().doc(classId);
+      const data = await docref.get();
+      if (data.exists) {
+        if (images) {
+          await docref.update({
+            imageList: images.map(x => x.fileUrl)
+          });
+        } else {
+          await docref.update({
+            imageList: []
+          });
+        }
+      }
+    }
   }
 }

@@ -1,5 +1,5 @@
 firebase deploy --only functions:authFunction
-
+firebase deploy --only functions:classroomFunction
 firebase functions:config:get
 firebase functions:config:set gmail.email="youremail@gmail.com"
 firebase functions:config:set album.bucket.name="fujimusicpj.appspot.com"
