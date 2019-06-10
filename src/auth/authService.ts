@@ -13,7 +13,7 @@ export default class AuthService {
   constructor() {
     this.repository = new AuthDataRepository();
     this.secretKey = functions.config().auth.seckey;
-    this.tokenExpHour = "24h";
+    this.tokenExpHour = "7d";
     this.cryptAlgorithm = "HS256";
     //console.log("seckey", this.secretKey);
   }
