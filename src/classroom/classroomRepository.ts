@@ -90,10 +90,15 @@ export default class ClassroomRepository {
         for (const f of fileList) {
           // 署名付きURLを取得
           if (allowImage.find(x => f.name.toLowerCase().endsWith(x))) {
-            const [url] = await f.getSignedUrl({
-              action: "read",
-              expires: "03-09-2491"
-            });
+            // 署名付きURLだと１週間程度でエラーとなるのでファイル名から取得
+            const url = `https://firebasestorage.googleapis.com/v0/b/${
+              this.buketName
+            }/o/${encodeURIComponent(f.name)}?alt=media`;
+
+            // const [url] = await f.getSignedUrl({
+            //  action: "read",
+            //  expires: "03-09-2491"
+            // });
             console.log("url", url);
             imageList.push(
               new ImageInfo(f.name.split("/").pop() as string, url)
